@@ -1,0 +1,31 @@
+name=$__object_id
+webroot="$(cat "$__object/parameter/webroot")"
+
+mkdir "$__object/files"
+config="$__object/files/nginx-config"
+
+cat > "$config" << eof
+
+server {
+    listen *:80;
+    listen [::]:80;
+
+    server_name $name;
+
+    # Let's encrypt
+    location /.well-known/acme-challenge/ {
+        root $webroot;
+    }
+
+    # Everything else -> ssl
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+eof
+
+__package nginx
+
+require="__package/nginx" __file "/etc/nginx/sites-enabled/http-$name" \
+    --source "$config" --mode 0644

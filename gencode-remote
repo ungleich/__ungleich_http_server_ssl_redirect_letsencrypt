@@ -1,0 +1,19 @@
+name=$__object_id
+os=$(cat "$__global/explorer/os")
+
+if grep -q "^__file/etc/nginx/sites-enabled/http-${name}" "$__messages_in"; then
+    if [ "$os" = "devuan" ]; then
+        echo service nginx restart
+    else
+        cat << eof
+if ! systemctl restart nginx; then
+    # Failure can be due to "start request repeated too quickly, refusing to start".
+    # Try reseting burst limit counter and try restarting again.
+    # If the error when starting nginx is not related to burst limit counter
+    # then the second restart will fail too and the script will fail with the real error.
+    systemctl reset-failed nginx
+    systemctl restart nginx
+fi
+eof
+    fi
+fi
